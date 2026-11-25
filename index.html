@@ -1,0 +1,1217 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Опыты по электричеству</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@600&family=Manrope:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: шапка с формулой → пульт (слева) и прибор с решёткой металла (справа) → расчёт → график R(t) → сравнение металлов */
+:root{
+  --bg:#edf0f3; --surface:#ffffff; --ink:#14202b; --muted:#5a6774; --line:#d4dbe2; --grid:#e6ebf0;
+  --accent:#0b766c; --accent-soft:#dcefec; --accent-ink:#ffffff;
+  --warn:#a8281e; --warn-soft:#fbe7e4; --info:#3c5a86; --info-soft:#e5ecf6;
+  --lcd-bg:#0d1a1c; --lcd-fg:#86f2e2; --lcd-dim:#57958c;
+  --ion:#8693a0; --electron:#0b766c; --cold:#3a78d8; --post:#46515c; --plus:#c8372d; --minus:#2563c9;
+  --f-display:"Unbounded","Manrope",system-ui,sans-serif;
+  --f-body:"Manrope",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0e1317; --surface:#161d23; --ink:#e4eaef; --muted:#95a3af; --line:#2a353f; --grid:#1f2830;
+  --accent:#3fc4b4; --accent-soft:#163633; --accent-ink:#06201d;
+  --warn:#ff8a7d; --warn-soft:#3a1c19; --info:#9dbcf0; --info-soft:#1b2638;
+  --lcd-bg:#081113; --lcd-fg:#86f2e2; --lcd-dim:#4b8178;
+  --ion:#7d8a97; --electron:#3fc4b4; --cold:#6fa2f2; --post:#7c8996; --plus:#ff7a6e; --minus:#6fa2f2; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0e1317; --surface:#161d23; --ink:#e4eaef; --muted:#95a3af; --line:#2a353f; --grid:#1f2830;
+  --accent:#3fc4b4; --accent-soft:#163633; --accent-ink:#06201d;
+  --warn:#ff8a7d; --warn-soft:#3a1c19; --info:#9dbcf0; --info-soft:#1b2638;
+  --lcd-bg:#081113; --lcd-fg:#86f2e2; --lcd-dim:#4b8178;
+  --ion:#7d8a97; --electron:#3fc4b4; --cold:#6fa2f2; --post:#7c8996; --plus:#ff7a6e; --minus:#6fa2f2; color-scheme:dark}
+
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.5;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:28px 40px}
+.wrap{max-width:1080px;margin:0 auto;display:grid;gap:18px}
+h1,h2{margin:0;text-wrap:balance}
+h1{font-family:var(--f-display);font-weight:600;font-size:clamp(1.5rem,3.6vw,2.3rem);line-height:1.15;letter-spacing:-.01em}
+h2{font-size:1.05rem;font-weight:700}
+.eyebrow{margin:0;font-size:.75rem;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);font-weight:600}
+.top{display:grid;gap:10px;padding-bottom:4px}
+.top-row{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px 28px}
+.formula{font-family:var(--f-mono);font-size:clamp(1.3rem,3vw,1.75rem);font-weight:600;margin:0;padding:6px 14px;border:1.5px solid var(--ink);border-radius:6px;white-space:nowrap}
+.lede{margin:0;max-width:68ch;color:var(--muted)}
+.legend{display:flex;flex-wrap:wrap;gap:6px 22px;margin:0;padding:0;list-style:none;font-size:.9rem}
+.legend b{font-family:var(--f-mono);color:var(--ink)}
+
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px;min-width:0}
+.lab{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,6fr);gap:18px}
+@media (max-width:820px){.lab{grid-template-columns:minmax(0,1fr)}}
+
+.controls{display:grid;gap:20px;align-content:start}
+fieldset{border:0;margin:0;padding:0;min-width:0}
+legend,.lbl{font-weight:700;font-size:.9rem;margin-bottom:8px;padding:0;display:block}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{position:relative;cursor:pointer}
+.chip input{position:absolute;opacity:0;width:1px;height:1px}
+.chip span{display:inline-flex;align-items:center;gap:7px;padding:6px 11px;border:1px solid var(--line);border-radius:999px;font-size:.88rem;font-weight:500;transition:background .15s,border-color .15s}
+.chip span i{width:10px;height:10px;border-radius:50%;background:var(--sw);box-shadow:inset 0 0 0 1px rgba(0,0,0,.18)}
+.chip:hover span{border-color:var(--muted)}
+.chip input:checked + span{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:700}
+.chip input:focus-visible + span{outline:2px solid var(--accent);outline-offset:2px}
+.custom{display:flex;align-items:center;gap:10px;margin-top:10px;flex-wrap:wrap;font-size:.9rem}
+.metal-info{margin:10px 0 0;font-size:.88rem;color:var(--muted)}
+.metal-info b{color:var(--ink);font-family:var(--f-mono);font-weight:600}
+
+.inputunit{display:inline-flex;align-items:stretch;border:1px solid var(--line);border-radius:7px;overflow:hidden;background:var(--bg)}
+.inputunit input{border:0;background:transparent;color:var(--ink);font:600 1rem var(--f-mono);padding:7px 10px;width:7.5em;min-width:0;font-variant-numeric:tabular-nums}
+.inputunit input:focus{outline:none}
+.inputunit:focus-within{outline:2px solid var(--accent);outline-offset:1px}
+.inputunit span{display:flex;align-items:center;padding:0 10px;color:var(--muted);font-size:.88rem;border-left:1px solid var(--line)}
+.trow{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.trow input[type=range]{flex:1 1 180px;accent-color:var(--accent);min-width:0;height:28px}
+.presets{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.presets button{font:500 .8rem var(--f-body);color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:5px 9px;cursor:pointer}
+.presets button:hover{border-color:var(--muted)}
+.presets button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.presets button b{font-family:var(--f-mono);font-weight:600}
+
+.meter{display:grid;gap:12px;align-content:start}
+.lcd{background:var(--lcd-bg);color:var(--lcd-fg);border-radius:8px;padding:14px 16px;font-family:var(--f-mono);display:grid;gap:4px}
+.lcd-label{font-size:.82rem;color:var(--lcd-dim);letter-spacing:.03em}
+.lcd-value{font-size:clamp(2rem,6vw,2.9rem);font-weight:600;line-height:1.1;font-variant-numeric:tabular-nums;text-shadow:0 0 12px rgba(134,242,226,.35)}
+.lcd-value small{font-size:.45em;margin-left:.35em;color:var(--lcd-dim);text-shadow:none}
+.lcd-row{display:flex;flex-wrap:wrap;gap:4px 18px;font-size:.85rem;font-variant-numeric:tabular-nums}
+.lcd-row span{color:var(--lcd-dim)}
+.lcd-row b{font-weight:600;color:var(--lcd-fg)}
+.lcd{grid-template-columns:minmax(0,1fr) auto;column-gap:14px;align-items:center}
+.lcd-main{display:grid;gap:4px;min-width:0}
+#dial,#dDial{width:124px;height:auto;display:block}
+@media (max-width:440px){#dial,#dDial{width:96px}}
+.scene-box{position:relative;border-radius:8px;overflow:hidden;border:1px solid var(--line);aspect-ratio:16/10;max-width:100%;background:var(--surface)}
+#scene,#dScene{display:block;width:100%;height:100%}
+#lattice{position:absolute;left:2.5%;top:4%;width:26%;aspect-ratio:1;border-radius:50%;border:3px solid var(--post);background:var(--surface);box-shadow:0 4px 14px rgba(0,0,0,.18)}
+.tags{position:absolute;right:10px;top:10px;display:flex;flex-direction:column;align-items:flex-end;gap:6px}
+.tag{font-size:.75rem;font-weight:600;padding:3px 8px;border-radius:999px;background:var(--surface);color:var(--ink);border:1px solid var(--line)}
+.tag.k{font-family:var(--f-mono)}
+.tag.hot{background:var(--warn-soft);color:var(--warn);border-color:transparent}
+.caption{margin:0;font-size:.85rem;color:var(--muted)}
+.note{margin:0;padding:10px 12px;border-radius:8px;font-size:.88rem;background:var(--info-soft);color:var(--info)}
+.note.warn{background:var(--warn-soft);color:var(--warn)}
+
+.calc-lines{display:grid;gap:6px;margin-top:12px;font-family:var(--f-mono);font-size:clamp(.88rem,2.2vw,1.02rem);overflow-x:auto;font-variant-numeric:tabular-nums}
+.calc-lines div{white-space:nowrap}
+.calc-lines .res{font-weight:600;color:var(--accent)}
+.calc-lines .dim{color:var(--muted)}
+
+.hint{margin:4px 0 10px;font-size:.85rem;color:var(--muted);max-width:75ch}
+#chartBox{width:100%;touch-action:none}
+#chart{display:block;width:100%;cursor:ew-resize;user-select:none}
+#chart text{font-family:var(--f-mono);font-size:11px;fill:var(--muted)}
+#chart text.lab{font-family:var(--f-body);font-weight:700;font-size:12px}
+
+.tablewrap{overflow-x:auto;margin-top:10px}
+table{border-collapse:collapse;width:100%;font-size:.9rem;min-width:520px}
+th,td{text-align:right;padding:7px 10px;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums;white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+th{font-size:.8rem;letter-spacing:.02em;color:var(--muted);font-weight:600}
+td{font-family:var(--f-mono)}
+td:first-child{font-family:var(--f-body)}
+tbody tr{cursor:pointer}
+tbody tr:hover{background:var(--bg)}
+tbody tr.sel{background:var(--accent-soft)}
+tbody tr.sel td:first-child button{font-weight:700}
+td button{all:unset;cursor:pointer;display:inline-flex;align-items:center;gap:8px}
+td button:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:3px}
+td button i{width:10px;height:10px;border-radius:50%;background:var(--sw);box-shadow:inset 0 0 0 1px rgba(0,0,0,.18)}
+td.melt{color:var(--warn);font-family:var(--f-body);font-size:.85rem}
+.foot{font-size:.82rem;color:var(--muted);margin:0;max-width:85ch}
+.topics{display:flex;flex-wrap:wrap;gap:4px;padding:4px;background:var(--surface);border:1px solid var(--line);border-radius:10px;justify-self:start;max-width:100%}
+.topics button{font:600 .92rem var(--f-body);color:var(--muted);background:transparent;border:0;border-radius:7px;padding:8px 14px;cursor:pointer}
+.topics button:hover{color:var(--ink)}
+.topics button[aria-selected="true"]{background:var(--ink);color:var(--bg)}
+.topics button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.topic{display:grid;gap:18px;min-width:0}
+.charts2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;margin-top:6px}
+@media (max-width:720px){.charts2{grid-template-columns:minmax(0,1fr)}}
+.charts2 svg{display:block;width:100%}
+.charts2 svg text{font-family:var(--f-mono);font-size:11px;fill:var(--muted)}
+#dScene{cursor:ew-resize;touch-action:none}
+#t-diel .tags{display:none}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<meta name="description" content="Интерактивные опыты по физике: сопротивление металлов и температура, диэлектрик в электрическом поле">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="topics" aria-label="Тема">
+    <button type="button" data-topic="soprotivlenie" aria-selected="true">Сопротивление и температура</button>
+    <button type="button" data-topic="dielektrik" aria-selected="false">Диэлектрик в поле</button>
+  </nav>
+  <div class="topic" id="t-rt">
+  <header class="top">
+    <p class="eyebrow">Физика · электрический ток в металлах</p>
+    <div class="top-row">
+      <h1>Сопротивление и температура</h1>
+      <p class="formula" aria-label="R равно R ноль, умноженное на один плюс альфа t">R = R₀(1 + αt)</p>
+    </div>
+    <p class="lede">При нагревании ионы кристаллической решётки колеблются сильнее. Свободные электроны чаще на них рассеиваются, поэтому сопротивление металла растёт почти линейно с температурой.</p>
+    <ul class="legend">
+      <li><b>R₀</b> сопротивление при 0 °C</li>
+      <li><b>α</b> температурный коэффициент сопротивления, К⁻¹</li>
+      <li><b>t</b> температура, °C</li>
+    </ul>
+  </header>
+
+  <section class="lab">
+    <div class="panel controls">
+      <fieldset>
+        <legend>Металл</legend>
+        <div class="chips" id="chips"></div>
+        <div class="custom" id="customBox" hidden>
+          <label for="alphaIn">α =</label>
+          <div class="inputunit"><input id="alphaIn" type="text" inputmode="decimal" value="0,004"><span>К⁻¹</span></div>
+        </div>
+        <p class="metal-info" id="metalInfo"></p>
+      </fieldset>
+
+      <div>
+        <label class="lbl" for="r0">Сопротивление при 0 °C, R₀</label>
+        <div class="inputunit"><input id="r0" type="number" min="0.001" step="any" value="10"><span>Ом</span></div>
+      </div>
+
+      <div>
+        <label class="lbl" for="tNum">Температура t</label>
+        <div class="trow">
+          <input id="tRange" type="range" min="-200" max="3000" step="1" value="100" aria-label="Температура, ползунок">
+          <div class="inputunit"><input id="tNum" type="number" min="-200" max="3000" step="1" value="100"><span>°C</span></div>
+        </div>
+        <div class="presets" id="presets">
+          <button type="button" data-t="-196"><b>−196</b> жидкий азот</button>
+          <button type="button" data-t="0"><b>0</b> лёд</button>
+          <button type="button" data-t="20"><b>20</b> комната</button>
+          <button type="button" data-t="100"><b>100</b> кипяток</button>
+          <button type="button" data-t="800"><b>800</b> красное каление</button>
+          <button type="button" data-t="2500"><b>2500</b> нить лампы</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel meter">
+      <div class="lcd" aria-live="polite">
+        <div class="lcd-main">
+          <div class="lcd-label" id="lcdLabel">Медь · t = 100 °C</div>
+          <div class="lcd-value"><span id="rOut">14,30</span><small id="rUnit">Ом</small></div>
+          <div class="lcd-row">
+            <div><span>R/R₀</span> <b id="ratioOut">1,43</b></div>
+            <div><span>ΔR</span> <b id="dOut">+4,3 Ом</b></div>
+            <div><span>изменение</span> <b id="pOut">+43 %</b></div>
+          </div>
+          <div class="lcd-row">
+            <div><span>ток при U = 4,5 В</span> <b id="iOut">0,31 А</b></div>
+            <div><span>длина</span> <b id="lOut">+0,17 %</b></div>
+          </div>
+        </div>
+        <svg id="dial" viewBox="0 0 124 86" aria-label="Амперметр"></svg>
+      </div>
+      <div class="scene-box">
+        <canvas id="scene" role="img" aria-label="Опыт: проволока между стойками нагревается или охлаждается"></canvas>
+        <canvas id="lattice" role="img" aria-label="Под лупой: ионы решётки колеблются, электроны дрейфуют"></canvas>
+        <div class="tags">
+          <span class="tag" id="glowTag">не светится</span>
+          <span class="tag k" id="kTag">373 K</span>
+        </div>
+      </div>
+      <p class="caption">Проволока включена в цепь с батарейкой 4,5 В и амперметром. При нагреве она светится, удлиняется и провисает (для наглядности провисание преувеличено), сопротивление растёт, ток падает. Выше точки плавления проволока рвётся, и ток пропадает. В лупе видно, что происходит внутри: ионы колеблются сильнее, электроны чаще с ними сталкиваются.</p>
+      <p class="note" id="note" hidden></p>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>Расчёт</h2>
+    <div class="calc-lines" id="calc"></div>
+  </section>
+
+  <section class="panel">
+    <h2>График R(t)</h2>
+    <p class="hint">Ведите по графику, чтобы менять температуру. Серые прямые показывают другие металлы с тем же R₀. Прямая обрывается в точке плавления металла.</p>
+    <div id="chartBox"><svg id="chart" role="img" aria-label="График зависимости сопротивления от температуры"></svg></div>
+  </section>
+
+  <section class="panel">
+    <h2 id="cmpTitle">Все металлы при t = 100 °C</h2>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Металл</th><th>α, К⁻¹</th><th>R, Ом</th><th>R/R₀</th><th>t плавл., °C</th></tr></thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <p class="foot">Значения α взяты из школьных справочных таблиц для интервала 0–100 °C. Линейный закон R = R₀(1 + αt) приближённый: при сильном охлаждении и при высоких температурах реальная зависимость отклоняется от прямой. У сплавов нихром и константан α очень мал, поэтому из них делают резисторы и нагревательные спирали.</p>
+  </div>
+
+  <div class="topic" id="t-diel" hidden>
+  <header class="top">
+    <p class="eyebrow">Физика · электростатика</p>
+    <div class="top-row">
+      <h1>Диэлектрик в электрическом поле</h1>
+      <p class="formula" aria-label="E равно E ноль, делённое на эпсилон">E = E₀ / ε</p>
+    </div>
+    <p class="lede">В диэлектрике почти нет свободных зарядов, но в электрическом поле он поляризуется. Полярные молекулы поворачиваются вдоль поля, у неполярных электронные облака смещаются против поля. На поверхностях диэлектрика появляются связанные заряды. Их поле направлено против внешнего, поэтому поле внутри диэлектрика в ε раз слабее.</p>
+    <ul class="legend">
+      <li><b>E₀</b> поле без диэлектрика</li>
+      <li><b>ε</b> диэлектрическая проницаемость</li>
+      <li><b>C = εε₀S/d</b> ёмкость плоского конденсатора</li>
+    </ul>
+  </header>
+
+  <section class="lab">
+    <div class="panel controls">
+      <fieldset>
+        <legend>Диэлектрик</legend>
+        <div class="chips" id="dChips"></div>
+        <div class="custom" id="dCustomBox" hidden>
+          <label for="dEps">ε =</label>
+          <div class="inputunit"><input id="dEps" type="text" inputmode="decimal" value="4"></div>
+          <label class="chip"><input type="checkbox" id="dPolar"><span>полярные молекулы</span></label>
+        </div>
+        <p class="metal-info" id="dInfo"></p>
+      </fieldset>
+
+      <fieldset>
+        <legend>Конденсатор</legend>
+        <div class="chips" id="dMode">
+          <label class="chip"><input type="radio" name="dmode" value="on" checked><span>подключён к источнику</span></label>
+          <label class="chip"><input type="radio" name="dmode" value="off"><span>зарядили и отключили</span></label>
+        </div>
+        <p class="metal-info" id="dModeInfo"></p>
+      </fieldset>
+
+      <div>
+        <label class="lbl" for="dUNum" id="dULabel">Напряжение источника U</label>
+        <div class="trow">
+          <input id="dURange" type="range" min="0" max="1000" step="10" value="500" aria-label="Напряжение, ползунок">
+          <div class="inputunit"><input id="dUNum" type="number" min="0" max="1000" step="10" value="500"><span>В</span></div>
+        </div>
+      </div>
+
+      <div>
+        <label class="lbl" for="dFillNum">Толщина пластины диэлектрика h</label>
+        <div class="trow">
+          <input id="dFillRange" type="range" min="0" max="100" step="1" value="60" aria-label="Толщина пластины, ползунок">
+          <div class="inputunit"><input id="dFillNum" type="number" min="0" max="100" step="1" value="60"><span>% от d</span></div>
+        </div>
+        <div class="presets" id="dPresets">
+          <button type="button" data-fill="0">вынуть пластину</button>
+          <button type="button" data-fill="50">половина зазора</button>
+          <button type="button" data-fill="100">заполнить весь зазор</button>
+        </div>
+      </div>
+
+      <div>
+        <label class="lbl" for="dGapNum">Расстояние между пластинами d</label>
+        <div class="trow">
+          <input id="dGapRange" type="range" min="1" max="10" step="0.5" value="5" aria-label="Расстояние, ползунок">
+          <div class="inputunit"><input id="dGapNum" type="number" min="1" max="10" step="0.5" value="5"><span>мм</span></div>
+        </div>
+        <p class="metal-info">Площадь каждой пластины S = 100 см²</p>
+      </div>
+    </div>
+
+    <div class="panel meter">
+      <div class="lcd" aria-live="polite">
+        <div class="lcd-main">
+          <div class="lcd-label" id="dLcdLabel">Стекло · поле внутри диэлектрика</div>
+          <div class="lcd-value"><span id="dEdOut">—</span><small>кВ/м</small></div>
+          <div class="lcd-row">
+            <div><span>в воздухе</span> <b id="dEaOut"></b></div>
+            <div><span>ослабление</span> <b id="dKOut"></b></div>
+          </div>
+          <div class="lcd-row">
+            <div><span>U</span> <b id="dUOut"></b></div>
+            <div><span>q</span> <b id="dQOut"></b></div>
+            <div><span>C</span> <b id="dCOut"></b></div>
+          </div>
+        </div>
+        <svg id="dDial" viewBox="0 0 124 86" aria-label="Электрометр: напряжение между пластинами"></svg>
+      </div>
+      <div class="scene-box">
+        <canvas id="dScene" role="img" aria-label="Плоский конденсатор с пластиной диэлектрика: линии поля, заряды и молекулы"></canvas>
+        <div class="tags">
+          <span class="tag" id="dTag1"></span>
+          <span class="tag k" id="dTag2"></span>
+        </div>
+      </div>
+      <p class="caption">Слева пластина «+», справа «−». Каждая линия поля начинается на свободном заряде «+». Часть линий обрывается на связанных зарядах поверхности диэлектрика, поэтому внутри линий в ε раз меньше. У молекул красный конец заряжен положительно, синий отрицательно. Тяните по рисунку, чтобы менять толщину пластины.</p>
+      <p class="note" id="dNote" hidden></p>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>Расчёт</h2>
+    <div class="calc-lines" id="dCalc"></div>
+  </section>
+
+  <section class="panel">
+    <h2>Поле и потенциал внутри конденсатора</h2>
+    <p class="hint">По горизонтали путь от пластины «+» к пластине «−», в миллиметрах. Закрашенная полоса показывает диэлектрик, пунктир показывает, как было бы без него.</p>
+    <div class="charts2">
+      <div><p class="lbl">Напряжённость E, кВ/м</p><svg id="dChartE" role="img" aria-label="График напряжённости поля"></svg></div>
+      <div><p class="lbl">Потенциал φ, В</p><svg id="dChartP" role="img" aria-label="График потенциала"></svg></div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2 id="dCmpTitle">Все диэлектрики</h2>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Диэлектрик</th><th>ε</th><th>Молекулы</th><th>E внутри, кВ/м</th><th>U, В</th><th>C, пФ</th><th>q, нКл</th></tr></thead>
+        <tbody id="dTbody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <p class="foot">Значения ε взяты из школьных таблиц для комнатной температуры. Модель упрощена: пластина диэлектрика параллельна обкладкам и стоит посередине зазора, краевые эффекты не учитываются. Молекулы нарисованы схематично и сильно увеличены.</p>
+  </div>
+
+</div>
+
+<script>
+const METALS = [
+  {id:'cu', name:'Медь',       a:0.0043,  tm:1085, sw:'#c87a46', b:17e-6},
+  {id:'al', name:'Алюминий',   a:0.0042,  tm:660,  sw:'#b7c0c8', b:23e-6},
+  {id:'ag', name:'Серебро',    a:0.0041,  tm:962,  sw:'#d5d9dd', b:19e-6},
+  {id:'au', name:'Золото',     a:0.0040,  tm:1064, sw:'#d8aa36', b:14e-6},
+  {id:'fe', name:'Железо',     a:0.0060,  tm:1538, sw:'#6f7378', b:12e-6},
+  {id:'ni', name:'Никель',     a:0.0065,  tm:1455, sw:'#a9a68f', b:13e-6},
+  {id:'w',  name:'Вольфрам',   a:0.0048,  tm:3422, sw:'#8c929c', b:4.5e-6},
+  {id:'pt', name:'Платина',    a:0.0039,  tm:1768, sw:'#e2e2e4', b:9e-6},
+  {id:'pb', name:'Свинец',     a:0.0042,  tm:327,  sw:'#7c8292', b:29e-6},
+  {id:'sn', name:'Олово',      a:0.0044,  tm:232,  sw:'#c9ccd0', b:22e-6},
+  {id:'nc', name:'Нихром',     a:0.0001,  tm:1400, sw:'#968a80', b:14e-6},
+  {id:'kn', name:'Константан', a:0.00005, tm:1260, sw:'#b89470', b:15e-6},
+];
+const CUSTOM = {id:'custom', name:'Свой α', a:0.004, tm:Infinity, sw:'#9aa3ad', b:15e-6};
+const ALL = [...METALS, CUSTOM];
+const TMIN = -200, TMAX = 3000, U = 4.5;
+
+const state = {id:'cu', r0:10, t:100, hover:null};
+const $ = id => document.getElementById(id);
+const metal = () => ALL.find(m => m.id === state.id);
+const R = (m, t) => state.r0 * (1 + m.a * t);
+
+/* ---------- format ---------- */
+const nf = (n, d) => n.toLocaleString('ru-RU', {minimumFractionDigits:d, maximumFractionDigits:d});
+const fmtR = r => { const a = Math.abs(r); return nf(r, a >= 1000 ? 0 : a >= 100 ? 1 : a >= 10 ? 2 : a >= 1 ? 3 : 4); };
+const fmtA = a => a.toLocaleString('ru-RU', {maximumFractionDigits:7});
+const fmtT = t => (t < 0 ? '−' : '') + Math.abs(t).toLocaleString('ru-RU', {maximumFractionDigits:1});
+const minus = s => s.replace('-', '−');
+const sgn = (n, s) => (n > 0 ? '+' : n < 0 ? '−' : '') + s(Math.abs(n));
+
+/* ---------- glow (цвет каления) ---------- */
+const GLOW = [[450,[90,10,5,0]],[550,[110,14,6,.35]],[700,[160,28,10,.55]],[850,[210,64,14,.7]],[1000,[240,122,26,.8]],[1200,[255,181,74,.85]],[1450,[255,227,154,.9]],[1700,[255,246,222,.95]]];
+function glow(t){
+  if (t <= GLOW[0][0]) return null;
+  for (let i = 1; i < GLOW.length; i++){
+    if (t <= GLOW[i][0]){
+      const [t0,c0] = GLOW[i-1], [t1,c1] = GLOW[i], k = (t - t0)/(t1 - t0);
+      return c0.map((v,j) => v + (c1[j]-v)*k);
+    }
+  }
+  return GLOW[GLOW.length-1][1];
+}
+function glowName(t){
+  if (t < 0) return 'охлаждён';
+  if (t < 480) return 'не светится';
+  if (t < 650) return 'еле заметное свечение';
+  if (t < 850) return 'тёмно-красное каление';
+  if (t < 1050) return 'вишнёво-оранжевое';
+  if (t < 1350) return 'жёлтое каление';
+  return 'белое каление';
+}
+
+/* ---------- controls ---------- */
+$('chips').innerHTML = ALL.map(m => `<label class="chip"><input type="radio" name="metal" value="${m.id}" ${m.id===state.id?'checked':''}><span>${m.id==='custom'?'':`<i style="--sw:${m.sw}"></i>`}${m.name}</span></label>`).join('');
+$('chips').addEventListener('change', e => { state.id = e.target.value; update(); });
+$('alphaIn').addEventListener('input', e => {
+  const v = parseFloat(e.target.value.replace(',', '.').replace('−','-'));
+  if (isFinite(v)) { CUSTOM.a = v; update(); }
+});
+$('r0').addEventListener('input', e => { const v = parseFloat(e.target.value); if (v > 0) { state.r0 = v; update(); } });
+function setT(t, from){
+  t = Math.max(TMIN, Math.min(TMAX, Math.round(t)));
+  state.t = t;
+  if (from !== 'range') $('tRange').value = t;
+  if (from !== 'num') $('tNum').value = t;
+  update();
+}
+$('tRange').addEventListener('input', e => setT(+e.target.value, 'range'));
+$('tNum').addEventListener('input', e => { if (e.target.value !== '' && isFinite(+e.target.value)) setT(+e.target.value, 'num'); });
+$('tNum').addEventListener('blur', () => { $('tNum').value = state.t; });
+$('presets').addEventListener('click', e => { const b = e.target.closest('button'); if (b) setT(+b.dataset.t); });
+
+/* ---------- theme colors ---------- */
+let C = {};
+function readColors(){
+  const cs = getComputedStyle(document.documentElement);
+  ['surface','ion','electron','cold','ink','muted','line','grid','accent','warn','post','bg','plus','minus'].forEach(k => C[k] = cs.getPropertyValue('--'+k).trim());
+}
+readColors();
+const mq = matchMedia('(prefers-color-scheme: dark)');
+mq.addEventListener?.('change', () => { readColors(); update(); });
+new MutationObserver(() => { readColors(); update(); }).observe(document.documentElement, {attributes:true, attributeFilter:['data-theme']});
+
+/* ---------- main update ---------- */
+function update(){
+  const m = metal(), t = state.t, f = 1 + m.a*t, r = state.r0*f;
+  const melted = t >= m.tm, invalid = f <= 0;
+  $('customBox').hidden = m.id !== 'custom';
+  $('metalInfo').innerHTML = m.id === 'custom'
+    ? 'Введите свой температурный коэффициент. Отрицательный α бывает у угля и полупроводников.'
+    : `α = <b>${fmtA(m.a)}</b> К⁻¹ · плавится при <b>${m.tm.toLocaleString('ru-RU')}</b> °C`;
+
+  $('lcdLabel').textContent = `${m.id==='custom'?'Свой материал':m.name} · t = ${fmtT(t)} °C`;
+  if (invalid){
+    $('rOut').textContent = '—'; $('ratioOut').textContent = '—'; $('dOut').textContent = '—'; $('pOut').textContent = '—';
+  } else {
+    $('rOut').textContent = melted ? '—' : fmtR(r);
+    $('ratioOut').textContent = nf(f, f >= 10 ? 1 : 3);
+    $('dOut').textContent = sgn(r - state.r0, fmtR) + ' Ом';
+    const p = (f - 1)*100;
+    $('pOut').textContent = sgn(p, v => nf(v, v >= 100 ? 0 : 1)) + ' %';
+  }
+  $('kTag').textContent = `T = ${nf(t + 273.15, 0)} K`;
+  $('glowTag').textContent = melted ? 'расплавилась, цепь разорвана' : t <= -150 ? 'в жидком азоте' : glowName(t);
+  $('glowTag').className = 'tag' + (melted ? ' hot' : '');
+  const I = melted || invalid ? 0 : U / r;
+  $('iOut').textContent = melted ? '0 А, обрыв' : invalid ? '—' : `${fmtR(I)} А`;
+  const dl = m.b * t * 100;
+  $('lOut').textContent = melted ? '—' : sgn(dl, v => nf(v, v < .01 ? 4 : v < .1 ? 3 : 2)) + ' %';
+  renderDial(I);
+
+  const note = $('note');
+  let msg = '', warn = false;
+  if (invalid){ msg = `При t = ${fmtT(t)} °C формула даёт R ≤ 0. Линейный закон работает в ограниченном интервале температур: при сильном охлаждении сопротивление уменьшается медленнее, чем по прямой.`; warn = true; }
+  else if (melted){ msg = `${m.name} плавится при ${m.tm.toLocaleString('ru-RU')} °C. Выше этой температуры металл жидкий, и формула для твёрдого проводника не применяется.`; warn = true; }
+  else if (t < -100) msg = 'Ниже −100 °C линейная формула даёт только грубую оценку.';
+  else if (t > 1000) msg = 'При таких температурах зависимость заметно отклоняется от прямой, расчёт оценочный.';
+  note.hidden = !msg; note.textContent = msg; note.className = 'note' + (warn ? ' warn' : '');
+
+  // расчёт
+  const tStr = t < 0 ? `(${fmtT(t)} °C)` : `${fmtT(t)} °C`;
+  const aT = m.a*t;
+  $('calc').innerHTML = [
+    `<div class="dim">R = R₀ · (1 + α·t)</div>`,
+    `<div>R = ${fmtR(state.r0)} Ом · (1 + ${minus(fmtA(m.a))} К⁻¹ · ${tStr})</div>`,
+    `<div>R = ${fmtR(state.r0)} Ом · (1 ${aT < 0 ? '−' : '+'} ${nf(Math.abs(aT), Math.abs(aT) < .01 ? 5 : 4).replace(/0+$/,'').replace(/,$/,'')}) = ${fmtR(state.r0)} Ом · ${f < 0 ? '(' : ''}${minus(nf(f, 4).replace(/0+$/,'').replace(/,$/,''))}${f < 0 ? ')' : ''}</div>`,
+    invalid ? `<div class="res" style="color:var(--warn)">R ≤ 0, формула здесь неприменима</div>`
+      : `<div class="res">R ≈ ${minus(fmtR(r))} Ом${melted ? ' <span style="color:var(--warn);font-weight:400">(металл уже расплавлен)</span>' : ''}</div>`
+  ].join('');
+
+  $('cmpTitle').textContent = `Все металлы при t = ${fmtT(t)} °C, R₀ = ${fmtR(state.r0)} Ом`;
+  renderTable(); renderChart();
+  if (reduced) drawAll(0);
+}
+
+/* ---------- table ---------- */
+function renderTable(){
+  const t = state.t;
+  const rows = METALS.slice().sort((a,b) => b.a - a.a);
+  if (state.id === 'custom') rows.unshift(CUSTOM);
+  $('tbody').innerHTML = rows.map(m => {
+    const f = 1 + m.a*t, melted = t >= m.tm;
+    const rcell = f <= 0 ? '<td class="melt">R ≤ 0</td>' : melted ? '<td class="melt">расплавлен</td>' : `<td>${fmtR(state.r0*f)}</td>`;
+    return `<tr data-id="${m.id}" class="${m.id===state.id?'sel':''}"><td><button type="button">${m.id==='custom'?'':`<i style="--sw:${m.sw}"></i>`}${m.name}</button></td><td>${fmtA(m.a)}</td>${rcell}<td>${f<=0||melted?'—':nf(f,3)}</td><td>${isFinite(m.tm)?m.tm.toLocaleString('ru-RU'):'—'}</td></tr>`;
+  }).join('');
+}
+$('tbody').addEventListener('click', e => {
+  const tr = e.target.closest('tr'); if (!tr) return;
+  state.id = tr.dataset.id;
+  document.querySelector(`#chips input[value="${state.id}"]`).checked = true;
+  update();
+});
+$('tbody').addEventListener('mouseover', e => { const tr = e.target.closest('tr'); const id = tr ? tr.dataset.id : null; if (id !== state.hover){ state.hover = id; renderChart(); } });
+$('tbody').addEventListener('mouseleave', () => { state.hover = null; renderChart(); });
+
+/* ---------- chart ---------- */
+let frozen = null;
+function niceStep(range, n){
+  const raw = range/n, mag = 10**Math.floor(Math.log10(raw)), k = raw/mag;
+  return (k < 1.5 ? 1 : k < 3 ? 2 : k < 7 ? 5 : 10)*mag;
+}
+function xRange(){
+  if (frozen) return frozen;
+  const t = state.t;
+  const xmin = Math.max(TMIN, Math.min(-50, Math.floor(t*1.15/50)*50));
+  const xmax = Math.min(TMAX, Math.max(300, Math.ceil(t*1.2/100)*100));
+  return [xmin, xmax];
+}
+let geo = null;
+function renderChart(){
+  const box = $('chartBox'), W = Math.max(280, box.clientWidth), H = Math.round(Math.max(250, Math.min(360, W*0.48)));
+  const svg = $('chart'); svg.setAttribute('viewBox', `0 0 ${W} ${H}`); svg.setAttribute('height', H);
+  const pad = {l:58, r:18, t:16, b:38};
+  const [x0, x1] = xRange();
+  const sel = metal();
+  const lines = METALS.slice(); if (sel.id === 'custom') lines.push(CUSTOM);
+  let ymax = state.r0*1.1;
+  lines.forEach(m => { const te = Math.min(x1, m.tm); [x0, te].forEach(tt => { const v = R(m, tt); if (v > ymax) ymax = v; }); });
+  const ys = niceStep(ymax, 5); ymax = Math.ceil(ymax/ys)*ys;
+  const X = t => pad.l + (t - x0)/(x1 - x0)*(W - pad.l - pad.r);
+  const Y = r => H - pad.b - r/ymax*(H - pad.t - pad.b);
+  geo = {X, x0, x1, pad, W};
+  let s = '';
+  // grid
+  const xs = niceStep(x1 - x0, W < 500 ? 5 : 8);
+  for (let v = Math.ceil(x0/xs)*xs; v <= x1 + 1e-9; v += xs){
+    s += `<line x1="${X(v)}" x2="${X(v)}" y1="${pad.t}" y2="${H-pad.b}" style="stroke:${v===0?'var(--muted)':'var(--grid)'}" stroke-width="${v===0?1:1}" ${v===0?'stroke-dasharray="3 3"':''}/>`;
+    s += `<text x="${X(v)}" y="${H-pad.b+16}" text-anchor="middle">${minus(v.toLocaleString('ru-RU'))}</text>`;
+  }
+  for (let v = 0; v <= ymax + 1e-9; v += ys){
+    s += `<line x1="${pad.l}" x2="${W-pad.r}" y1="${Y(v)}" y2="${Y(v)}" style="stroke:var(--grid)"/>`;
+    s += `<text x="${pad.l-8}" y="${Y(v)+4}" text-anchor="end">${(+v.toPrecision(10)).toLocaleString('ru-RU',{maximumFractionDigits:3})}</text>`;
+  }
+  s += `<line x1="${pad.l}" x2="${W-pad.r}" y1="${H-pad.b}" y2="${H-pad.b}" style="stroke:var(--muted)"/>`;
+  s += `<text x="${W-pad.r}" y="${H-6}" text-anchor="end">t, °C</text>`;
+  s += `<text x="${pad.l-8}" y="${pad.t-4}" text-anchor="end">R, Ом</text>`;
+  // lines
+  const seg = m => {
+    let a = x0, b = Math.min(x1, m.tm);
+    if (m.a > 0 && 1 + m.a*a < 0) a = -1/m.a;
+    if (m.a < 0 && 1 + m.a*b < 0) b = -1/m.a;
+    return b > a ? [a, b] : null;
+  };
+  const drawLine = (m, style, w) => {
+    const sg = seg(m); if (!sg) return '';
+    let o = `<line x1="${X(sg[0])}" y1="${Y(R(m,sg[0]))}" x2="${X(sg[1])}" y2="${Y(R(m,sg[1]))}" style="stroke:${style}" stroke-width="${w}" stroke-linecap="round"/>`;
+    if (m.tm <= x1) o += `<circle cx="${X(m.tm)}" cy="${Y(R(m,m.tm))}" r="${w+1.5}" style="fill:var(--surface);stroke:${style}" stroke-width="1.5"/>`;
+    return o;
+  };
+  lines.forEach(m => { if (m.id !== sel.id && m.id !== state.hover) s += drawLine(m, 'var(--muted)', 1.1).replace(/style="/g, 'opacity=".38" style="'); });
+  const hv = state.hover && state.hover !== sel.id ? ALL.find(m => m.id === state.hover) : null;
+  if (hv){ s += drawLine(hv, 'var(--ink)', 1.8); const sg = seg(hv); if (sg) s += `<text class="lab" x="${X(sg[1])-6}" y="${Y(R(hv,sg[1]))-8}" text-anchor="end" style="fill:var(--ink)">${hv.name}</text>`; }
+  s += drawLine(sel, 'var(--accent)', 2.6);
+  // labels for selected
+  const sg = seg(sel);
+  if (sel.tm <= x1) s += `<text x="${Math.min(X(sel.tm), W-pad.r)}" y="${Y(R(sel,sel.tm))-10}" text-anchor="${X(sel.tm) > W - 120 ? 'end' : 'middle'}" style="fill:var(--warn)">плавление ${sel.tm.toLocaleString('ru-RU')} °C</text>`;
+  // R0 point
+  if (0 >= x0 && 0 <= x1){
+    s += `<circle cx="${X(0)}" cy="${Y(state.r0)}" r="3.5" style="fill:var(--accent)"/>`;
+    s += `<text class="lab" x="${X(0)+8}" y="${Y(state.r0)+16}" style="fill:var(--accent)">R₀</text>`;
+  }
+  // current marker
+  const t = state.t, r = R(sel, t), ok = 1 + sel.a*t > 0 && t < sel.tm;
+  s += `<line x1="${X(t)}" x2="${X(t)}" y1="${pad.t}" y2="${H-pad.b}" style="stroke:var(--ink)" stroke-width="1" stroke-dasharray="4 4" opacity=".7"/>`;
+  if (ok){
+    s += `<line x1="${pad.l}" x2="${X(t)}" y1="${Y(r)}" y2="${Y(r)}" style="stroke:var(--accent)" stroke-dasharray="2 4" opacity=".8"/>`;
+    s += `<circle cx="${X(t)}" cy="${Y(r)}" r="6" style="fill:var(--accent);stroke:var(--surface)" stroke-width="2.5"/>`;
+    const right = X(t) > W - 150;
+    s += `<text class="lab" x="${X(t) + (right ? -12 : 12)}" y="${Y(r) - 10}" text-anchor="${right?'end':'start'}" style="fill:var(--ink)">${fmtR(r)} Ом</text>`;
+  }
+  svg.innerHTML = s;
+}
+function tFromEvent(e){
+  const rect = $('chart').getBoundingClientRect(), {pad, W, x0, x1} = geo;
+  const px = (e.clientX - rect.left)/rect.width*W;
+  return x0 + (px - pad.l)/(W - pad.l - pad.r)*(x1 - x0);
+}
+$('chart').addEventListener('pointerdown', e => { frozen = xRange(); $('chart').setPointerCapture(e.pointerId); setT(tFromEvent(e)); });
+$('chart').addEventListener('pointermove', e => { if (frozen) setT(tFromEvent(e)); });
+const release = () => { if (frozen){ frozen = null; renderChart(); } };
+$('chart').addEventListener('pointerup', release);
+$('chart').addEventListener('pointercancel', release);
+new ResizeObserver(() => renderChart()).observe($('chartBox'));
+
+/* ---------- ammeter dial ---------- */
+function niceUp(x){ const mag = 10**Math.floor(Math.log10(x)); for (const k of [1,2,5,10]) if (k*mag >= x - 1e-12) return k*mag; }
+function renderDial(I){ renderGauge($('dial'), I, niceUp(2*U/state.r0), 'A'); }
+function renderGauge(el, I, Imax, unit){
+  const cx = 62, cy = 76, Rr = 54;
+  const P = (k, rr) => { const th = Math.PI*(1.12 + .76*k); return [cx + rr*Math.cos(th), cy + rr*Math.sin(th)]; };
+  let s = `<path d="M${P(0,Rr).join(' ')} A${Rr} ${Rr} 0 0 1 ${P(1,Rr).join(' ')}" fill="none" style="stroke:var(--lcd-dim)" stroke-width="1.5"/>`;
+  for (let i = 0; i <= 10; i++){
+    const k = i/10, [x1,y1] = P(k, Rr), [x2,y2] = P(k, Rr - (i%5 ? 4 : 8));
+    s += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" style="stroke:var(--lcd-dim)" stroke-width="${i%5?1:1.6}"/>`;
+  }
+  [0, .5, 1].forEach(k => { const [x,y] = P(k, Rr - 17); s += `<text x="${x}" y="${y+3}" text-anchor="middle" style="fill:var(--lcd-dim);font:10px var(--f-mono)">${(+(Imax*k).toPrecision(6)).toLocaleString('ru-RU')}</text>`; });
+  const over = I > Imax, k = Math.min(1.04, I/Imax), [nx,ny] = P(k, Rr - 4);
+  s += `<text x="${cx}" y="${cy-4}" text-anchor="middle" style="fill:var(--lcd-fg);font:600 13px var(--f-mono)">${unit}</text>`;
+  s += `<line x1="${cx}" y1="${cy}" x2="${nx}" y2="${ny}" style="stroke:${over?'#ff8a7d':'var(--lcd-fg)'}" stroke-width="2.2" stroke-linecap="round"/>`;
+  s += `<circle cx="${cx}" cy="${cy}" r="4" style="fill:var(--lcd-fg)"/>`;
+  if (over) s += `<text x="${cx}" y="${cy+9}" text-anchor="middle" style="fill:#ff8a7d;font:9px var(--f-mono)">зашкал</text>`;
+  el.innerHTML = s;
+}
+
+/* ---------- lattice (лупа) ---------- */
+const cv = $('lattice'), ctx = cv.getContext('2d');
+const sc = $('scene'), sx = sc.getContext('2d');
+const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+let CW = 0, CH = 0, ions = [], electrons = [], ionR = 6;
+let SW = 0, SH = 0, lens = {x:0, y:0, r:0};
+const dpr = () => Math.min(2, devicePixelRatio || 1);
+function sizeAll(){
+  const d = dpr();
+  const lr = cv.getBoundingClientRect(), sr = sc.getBoundingClientRect();
+  CW = lr.width; CH = lr.height; SW = sr.width; SH = sr.height;
+  cv.width = Math.round(CW*d); cv.height = Math.round(CH*d); ctx.setTransform(d,0,0,d,0,0);
+  sc.width = Math.round(SW*d); sc.height = Math.round(SH*d); sx.setTransform(d,0,0,d,0,0);
+  lens = {x: lr.left - sr.left + lr.width/2, y: lr.top - sr.top + lr.height/2, r: lr.width/2};
+  const step = Math.max(18, CW/6); ionR = step*.22;
+  ions = [];
+  for (let y = step/2; y < CH; y += step)
+    for (let x = step/2; x < CW; x += step)
+      ions.push({x, y, p1:Math.random()*6.28, p2:Math.random()*6.28, f1:5+Math.random()*4, f2:5+Math.random()*4, wx:0, wy:0});
+  const n = Math.max(10, Math.round(CW*CH/650));
+  electrons = Array.from({length:n}, () => ({x:Math.random()*CW, y:Math.random()*CH, vx:0, vy:0, kick:0}));
+  if (reduced) drawAll(0);
+}
+new ResizeObserver(sizeAll).observe(sc);
+
+function rgba(c, a){ return `rgba(${c[0]|0},${c[1]|0},${c[2]|0},${a})`; }
+const hex = h => [1,3,5].map(i => parseInt(h.slice(i, i+2), 16));
+const mix = (a, b, k) => a.map((v, i) => v + (b[i] - v)*k);
+
+function drawLattice(time, dt){
+  if (!CW) return;
+  const m = metal(), t = state.t, TK = t + 273.15;
+  const melted = t >= m.tm;
+  const f = Math.max(0.15, 1 + m.a*t);
+  let amp = (ionR/6)*(1 + 6.5*Math.sqrt(Math.max(TK, 0)/1500));
+  if (melted) amp *= 1.7;
+  amp = Math.min(amp, ionR*2.2);
+  ctx.fillStyle = C.surface; ctx.fillRect(0, 0, CW, CH);
+  const g = glow(t);
+  if (g){
+    const grd = ctx.createRadialGradient(CW/2, CH/2, 4, CW/2, CH/2, CW*.7);
+    grd.addColorStop(0, rgba(g, g[3])); grd.addColorStop(1, rgba(g, g[3]*.55));
+    ctx.fillStyle = grd; ctx.fillRect(0, 0, CW, CH);
+  } else if (t < 0){
+    ctx.fillStyle = C.cold; ctx.globalAlpha = Math.min(.16, -t/1200); ctx.fillRect(0, 0, CW, CH); ctx.globalAlpha = 1;
+  }
+  ctx.fillStyle = g && g[3] > .6 ? rgba([150,62,22], .8) : C.ion;
+  ions.forEach(o => {
+    if (melted && dt){ o.wx += (Math.random()-.5)*dt*50; o.wy += (Math.random()-.5)*dt*50; o.wx *= .985; o.wy *= .985; }
+    else { o.wx *= .9; o.wy *= .9; }
+    o.cx = o.x + o.wx + amp*Math.sin(time*o.f1 + o.p1);
+    o.cy = o.y + o.wy + amp*Math.cos(time*o.f2 + o.p2);
+    ctx.beginPath(); ctx.arc(o.cx, o.cy, ionR, 0, 6.283); ctx.fill();
+  });
+  const v = melted ? 0 : CW*.28/f;   // нет тока в оборванной проволоке
+  const scatter = 1.4*f;
+  ctx.fillStyle = g && g[3] > .6 ? rgba([20,40,60], .9) : C.electron;
+  electrons.forEach(e => {
+    if (dt){
+      if (Math.random() < scatter*dt){ e.vy = (Math.random()-.5)*CW*.8; e.vx = melted ? (Math.random()-.5)*CW*.8 : 0; e.kick = .25; }
+      e.kick = Math.max(0, e.kick - dt);
+      e.x += (v*(e.kick > 0 ? .3 : 1) + e.vx)*dt; e.vx *= .95;
+      e.y += e.vy*dt; e.vy *= .92;
+      if (e.x > CW + 4){ e.x = -4; e.y = Math.random()*CH; }
+      if (e.x < -4) e.x = CW + 4;
+      if (e.y < 2 || e.y > CH - 2){ e.vy = -e.vy; e.y = Math.max(2, Math.min(CH-2, e.y)); }
+    }
+    ctx.beginPath(); ctx.arc(e.x, e.y, Math.max(2.2, CW/75), 0, 6.283); ctx.fill();
+  });
+}
+
+/* ---------- сцена опыта ---------- */
+let meltK = 0, drops = [], puddles = [0, 0], mist = [], bubbles = [];
+function geom(){ return {xL:SW*.1, xR:SW*.9, yc:SH*.62, tab:SH*.92, r:Math.max(4, SH*.028)}; }
+function wire(G, m, t, mk){
+  const L = G.xR - G.xL, turns = Math.max(10, Math.round(L/(G.r*1.8)));
+  const pts = s => { const phi = s*turns*2*Math.PI; return [G.xL + s*L + G.r*.55*Math.cos(phi), G.yc + sag(G, m, t)*Math.sin(Math.PI*s) + G.r*Math.sin(phi)]; };
+  if (mk <= 0){
+    const a = []; for (let i = 0; i <= 600; i++) a.push(pts(i/600));
+    return {segs:[a], ends:[], probe: pts(.32)};
+  }
+  const segs = [], ends = []; let probe;
+  const half = (.5 - .03*mk)*L, n = 300;
+  for (const dir of [1, -1]){
+    let x = dir > 0 ? G.xL : G.xR, y = G.yc; const a = [];
+    for (let i = 0; i <= n; i++){
+      const u = i/n, ang = mk*1.35*Math.pow(u, 1.5), phi = u*(turns/2)*2*Math.PI;
+      if (i){ x += dir*(half/n)*Math.cos(ang); y += (half/n)*Math.sin(ang); }
+      a.push([x + dir*G.r*.55*Math.cos(phi), y + G.r*Math.sin(phi)]);
+      if (dir > 0 && i === Math.round(n*.62)) probe = [x, y];
+    }
+    segs.push(a); ends.push([x, y + G.r]);
+  }
+  return {segs, ends, probe};
+}
+const sag = (G, m, t) => 3 + Math.min(SH*.13, 1800*m.b*Math.max(t, 0)*SH/300);
+
+function drawScene(time, dt){
+  if (!SW) return;
+  const m = metal(), t = state.t, G = geom(), melted = t >= m.tm;
+  const g = glow(melted ? Math.min(t, m.tm + 200) : t);
+  if (reduced) meltK = melted ? 1 : 0;
+  else meltK = melted ? Math.min(1, meltK + dt/1.2) : 0;
+  if (!melted){ drops = []; puddles = [0, 0]; }
+
+  sx.clearRect(0, 0, SW, SH);
+  sx.fillStyle = C.surface; sx.fillRect(0, 0, SW, SH);
+  if (g){
+    const grd = sx.createRadialGradient(SW/2, G.yc, 10, SW/2, G.yc, SW*.6);
+    grd.addColorStop(0, rgba(g, g[3]*.32)); grd.addColorStop(1, rgba(g, 0));
+    sx.fillStyle = grd; sx.fillRect(0, 0, SW, SH);
+  }
+  // стол
+  sx.fillStyle = C.line; sx.fillRect(0, G.tab, SW, SH - G.tab);
+
+  // нагреватель или охлаждение
+  const bx = SW/2;
+  if (t > 40){
+    const bw = SW*.07, bh = SH*.09, fy = G.tab - bh;
+    sx.fillStyle = C.post; sx.fillRect(bx - bw/2, fy, bw, bh); sx.fillRect(bx - bw*.9, G.tab - 5, bw*1.8, 5);
+    const reach = fy - G.yc + G.r*2;
+    let fh = reach*Math.max(.3, Math.min(1.05, .3 + .75*t/1200));
+    if (!reduced) fh *= 1 + .05*Math.sin(time*17) + .03*Math.sin(time*29);
+    const fw = SW*.032;
+    const flame = (w, h, col) => { sx.beginPath(); sx.moveTo(bx - w, fy); sx.bezierCurveTo(bx - w, fy - h*.45, bx - w*.15, fy - h*.7, bx, fy - h); sx.bezierCurveTo(bx + w*.15, fy - h*.7, bx + w, fy - h*.45, bx + w, fy); sx.closePath(); sx.fillStyle = col; sx.fill(); };
+    flame(fw, fh, 'rgba(255,150,40,.55)');
+    flame(fw*.55, fh*.5, 'rgba(70,130,255,.75)');
+  }
+
+  // стойки и подводящие провода
+  const pw = Math.max(6, SW*.018), ptop = G.yc - SH*.05;
+  sx.strokeStyle = C.post; sx.lineWidth = 2;
+  sx.beginPath(); sx.moveTo(G.xL, ptop + 4); sx.lineTo(0, ptop - SH*.08); sx.moveTo(G.xR, ptop + 4); sx.lineTo(SW, ptop - SH*.08); sx.stroke();
+  sx.fillStyle = C.post;
+  [G.xL, G.xR].forEach(x => { sx.fillRect(x - pw/2, ptop, pw, G.tab - ptop); sx.fillRect(x - pw, ptop - 4, pw*2, 10); });
+
+  // проволока
+  const W = wire(G, m, t, meltK);
+  let col = hex(m.sw);
+  if (g) col = mix(col, g, Math.min(1, g[3]*1.05));
+  if (t < 0) col = mix(col, [205, 228, 255], Math.min(.55, -t/350));
+  sx.lineJoin = 'round'; sx.lineCap = 'round'; sx.lineWidth = Math.max(2.2, SH*.011);
+  sx.strokeStyle = rgba(col, 1);
+  if (g){ sx.shadowColor = rgba(g, .95); sx.shadowBlur = 6 + 26*g[3]; }
+  for (let pass = 0; pass < (g && g[3] > .5 ? 2 : 1); pass++)
+    W.segs.forEach(a => { sx.beginPath(); a.forEach(([x, y], i) => i ? sx.lineTo(x, y) : sx.moveTo(x, y)); sx.stroke(); });
+  sx.shadowBlur = 0;
+
+  // иней
+  if (t < -20 && t > -150){
+    sx.fillStyle = `rgba(255,255,255,${Math.min(.9, -t/120)})`;
+    W.segs[0].forEach(([x, y], i) => { if (i % 9 === 0){ sx.beginPath(); sx.arc(x + Math.sin(i)*1.5, y - 1, 1.6, 0, 6.283); sx.fill(); } });
+  }
+  // холодный туман
+  if (t < 0 && !reduced && dt){
+    if (Math.random() < Math.min(1, -t/150)*dt*14) mist.push({x: G.xL + Math.random()*(G.xR - G.xL), y: t <= -150 ? G.yc - SH*.1 : G.yc + 4, a: 0.5, r: 4 + Math.random()*6});
+  }
+  if (t >= 0) mist = [];
+  mist = mist.filter(p => p.a > 0);
+  mist.forEach(p => { if (dt){ p.y += (t <= -150 ? -14 : 10)*dt; p.x += Math.sin(time*2 + p.r)*6*dt; p.r += 6*dt; p.a -= .35*dt; }
+    sx.fillStyle = `rgba(220,235,255,${Math.max(0, p.a)*.6})`; sx.beginPath(); sx.arc(p.x, p.y, p.r, 0, 6.283); sx.fill(); });
+
+  // ванна с жидким азотом
+  if (t <= -150){
+    const x0 = SW*.17, x1 = SW*.83, y0 = G.yc - SH*.1;
+    sx.fillStyle = C.cold; sx.globalAlpha = .16; sx.fillRect(x0, y0, x1 - x0, G.tab - y0); sx.globalAlpha = 1;
+    sx.strokeStyle = C.muted; sx.lineWidth = 2; sx.beginPath(); sx.moveTo(x0, y0 - SH*.04); sx.lineTo(x0, G.tab); sx.lineTo(x1, G.tab); sx.lineTo(x1, y0 - SH*.04); sx.stroke();
+    if (!reduced && dt && Math.random() < dt*10) bubbles.push({x: x0 + 8 + Math.random()*(x1 - x0 - 16), y: G.tab - 4, r: 1.5 + Math.random()*2});
+    bubbles = bubbles.filter(b => b.y > y0);
+    sx.strokeStyle = C.cold; sx.lineWidth = 1;
+    bubbles.forEach(b => { if (dt) b.y -= 40*dt; sx.beginPath(); sx.arc(b.x, b.y, b.r, 0, 6.283); sx.stroke(); });
+  } else bubbles = [];
+
+  // марево над горячей проволокой
+  if (t > 150 && !melted){
+    sx.strokeStyle = C.muted; sx.lineWidth = 1.2; sx.globalAlpha = Math.min(.4, t/1500);
+    for (let k = 0; k < 5; k++){
+      const x = G.xL + (k + .5)/5*(G.xR - G.xL); sx.beginPath();
+      for (let j = 0; j <= 20; j++){ const yy = G.yc - G.r - 8 - j*2.2; const xx = x + Math.sin(j*.6 - time*4 + k)*3; j ? sx.lineTo(xx, yy) : sx.moveTo(xx, yy); }
+      sx.stroke();
+    }
+    sx.globalAlpha = 1;
+  }
+
+  // капли и лужица расплава
+  if (melted && meltK > .5){
+    if (!reduced && dt) W.ends.forEach((e, i) => { if (Math.random() < dt*1.6) drops.push({x: e[0], y: e[1], vy: 0, side: i}); });
+    const dc = g ? rgba(mix(hex(m.sw), g, g[3]), 1) : rgba(hex(m.sw), 1);
+    sx.fillStyle = dc;
+    drops = drops.filter(d => {
+      if (dt){ d.vy += SH*2.2*dt; d.y += d.vy*dt; }
+      if (d.y >= G.tab - 2){ puddles[d.side] = Math.min(SW*.06, puddles[d.side] + 2.2); return false; }
+      sx.beginPath(); sx.ellipse(d.x, d.y, 2.6, 3.6, 0, 0, 6.283); sx.fill(); return true;
+    });
+    if (reduced) puddles = [SW*.05, SW*.05];
+    W.ends.forEach((e, i) => { if (puddles[i] > 0){ sx.beginPath(); sx.ellipse(e[0], G.tab, puddles[i], Math.max(2, puddles[i]*.18), 0, 0, 6.283); sx.fill(); } });
+  }
+
+  // лупа
+  if (W.probe){
+    const [px, py] = W.probe, pr = 9;
+    sx.strokeStyle = C.post; sx.lineWidth = 2;
+    sx.beginPath(); sx.arc(px, py, pr, 0, 6.283); sx.stroke();
+    const ang = Math.atan2(lens.y - py, lens.x - px), sp = Math.asin(Math.min(1, (lens.r - pr)/Math.hypot(lens.x - px, lens.y - py)));
+    sx.globalAlpha = .55; sx.beginPath();
+    for (const sgn2 of [1, -1]){ const a = ang + sgn2*(Math.PI/2 + sp);
+      sx.moveTo(px + pr*Math.cos(a), py + pr*Math.sin(a)); sx.lineTo(lens.x + lens.r*Math.cos(a), lens.y + lens.r*Math.sin(a)); }
+    sx.stroke(); sx.globalAlpha = 1;
+  }
+  sx.fillStyle = C.muted; sx.font = '600 11px Manrope, system-ui, sans-serif'; sx.textAlign = 'center';
+  sx.fillText('под лупой', lens.x, lens.y + lens.r + 15);
+  sx.textAlign = 'left'; sx.fillText('к батарейке и амперметру', 8, SH - 8 > G.tab + 12 ? SH - 8 : G.tab - 6);
+}
+
+function drawAll(time, dt = 0){ drawLattice(time, dt); drawScene(time, dt); }
+if (!reduced){
+  let last = performance.now();
+  const loop = now => {
+    const dt = Math.min(.05, (now - last)/1000); last = now;
+    drawAll(now/1000, dt);
+    requestAnimationFrame(loop);
+  };
+  requestAnimationFrame(loop);
+}
+
+update();
+
+/* ================= Тема 2: диэлектрик в поле ================= */
+const EPS0 = 8.854e-12, AREA = 0.01;
+const DIEL = [
+  {id:'paraffin', name:'Парафин',  e:2.1, polar:false, col:'#e6d9a8'},
+  {id:'kerosene', name:'Керосин',  e:2.1, polar:false, col:'#e3cf86', liquid:true},
+  {id:'ebonite',  name:'Эбонит',   e:3,   polar:false, col:'#6b625c'},
+  {id:'mica',     name:'Слюда',    e:6,   polar:false, col:'#c7ad7c'},
+  {id:'glass',    name:'Стекло',   e:7,   polar:false, col:'#8fcfc8'},
+  {id:'alcohol',  name:'Спирт',    e:26,  polar:true,  col:'#b9d2ee', liquid:true},
+  {id:'water',    name:'Вода',     e:81,  polar:true,  col:'#7db8ec', liquid:true},
+];
+const DCUSTOM = {id:'custom', name:'Свой ε', e:4, polar:false, col:'#b3bfca'};
+const DALL = [...DIEL, DCUSTOM];
+const ds = {id:'glass', mode:'on', U0:500, fill:.6, dmm:5};
+const dm = () => DALL.find(x => x.id === ds.id);
+
+function dcalc(m){
+  const e = Math.max(1, m.e), d = ds.dmm/1000, h = ds.fill*d, deff = d - h + h/e;
+  const C = EPS0*AREA/deff, C0 = EPS0*AREA/d;
+  let U, q, Ea;
+  if (ds.mode === 'on'){ U = ds.U0; q = C*U; Ea = deff > 0 ? U/deff : 0; }
+  else { q = C0*ds.U0; Ea = ds.U0/d; U = Ea*deff; }
+  return {e, d, h, deff, C, C0, U, q, Ea, Ed: Ea/e, E0: ds.U0/d};
+}
+const kV = v => fmtR(v/1000);
+const pF = c => fmtR(c*1e12);
+const nC = q => fmtR(q*1e9);
+const num = (v, dgt = 3) => (+v.toPrecision(dgt)).toLocaleString('ru-RU');
+const mmS = v => num(v*1000, 3) + ' мм';
+
+/* ---------- controls ---------- */
+$('dChips').innerHTML = DALL.map(m => `<label class="chip"><input type="radio" name="diel" value="${m.id}" ${m.id===ds.id?'checked':''}><span>${m.id==='custom'?'':`<i style="--sw:${m.col}"></i>`}${m.name}</span></label>`).join('');
+$('dChips').addEventListener('change', e => { ds.id = e.target.value; dUpdate(); });
+$('dEps').addEventListener('input', e => { const v = parseFloat(e.target.value.replace(',', '.')); if (v >= 1 && v < 1e5){ DCUSTOM.e = v; dUpdate(); } });
+$('dPolar').addEventListener('change', e => { DCUSTOM.polar = e.target.checked; dUpdate(); });
+$('dMode').addEventListener('change', e => { ds.mode = e.target.value; dUpdate(); });
+function link(rangeId, numId, key, scale, min, max){
+  const set = (v, from) => {
+    v = Math.max(min, Math.min(max, v)); ds[key] = v/scale;
+    if (from !== 'r') $(rangeId).value = v;
+    if (from !== 'n') $(numId).value = v;
+    dUpdate();
+  };
+  $(rangeId).addEventListener('input', e => set(+e.target.value, 'r'));
+  $(numId).addEventListener('input', e => { if (e.target.value !== '' && isFinite(+e.target.value)) set(+e.target.value, 'n'); });
+  $(numId).addEventListener('blur', () => { $(numId).value = +(ds[key]*scale).toFixed(2); });
+  return set;
+}
+const setU = link('dURange', 'dUNum', 'U0', 1, 0, 1000);
+const setFill = link('dFillRange', 'dFillNum', 'fill', 100, 0, 100);
+const setGap = link('dGapRange', 'dGapNum', 'dmm', 1, 1, 10);
+$('dPresets').addEventListener('click', e => { const b = e.target.closest('button'); if (b) setFill(+b.dataset.fill); });
+
+/* ---------- update ---------- */
+function dUpdate(){
+  const m = dm(), r = dcalc(m), has = ds.fill > 0;
+  $('dCustomBox').hidden = m.id !== 'custom';
+  $('dInfo').innerHTML = `ε = <b>${num(m.e, 4)}</b> · ` + (m.polar
+    ? 'полярные молекулы: готовые диполи поворачиваются вдоль поля'
+    : 'неполярные молекулы: поле смещает электронные облака, молекулы становятся диполями');
+  $('dModeInfo').textContent = ds.mode === 'on'
+    ? 'Источник держит напряжение U. С диэлектриком ёмкость растёт, и на пластины натекает больше заряда.'
+    : 'Заряд на пластинах больше не меняется. Вставляем диэлектрик: поле внутри и напряжение падают, электрометр это показывает.';
+  $('dULabel').textContent = ds.mode === 'on' ? 'Напряжение источника U' : 'Конденсатор зарядили до U₀';
+
+  $('dLcdLabel').textContent = has ? `${m.name} · поле внутри диэлектрика` : 'Без диэлектрика · поле в зазоре';
+  $('dEdOut').textContent = kV(has ? r.Ed : r.Ea);
+  $('dEaOut').textContent = ds.fill >= 1 ? 'воздуха нет' : kV(r.Ea) + ' кВ/м';
+  $('dKOut').textContent = has ? `в ${num(r.e, 3)} раза` : 'нет';
+  $('dUOut').textContent = num(r.U, 4) + ' В';
+  $('dQOut').textContent = nC(r.q) + ' нКл';
+  $('dCOut').textContent = pF(r.C) + ' пФ';
+  renderGauge($('dDial'), r.U, niceUp(Math.max(10, ds.U0)), 'V');
+
+  $('dTag1').textContent = !has ? 'пластина вынута' : m.polar ? 'диполи поворачиваются' : 'облака электронов смещаются';
+  $('dTag2').textContent = has ? `E внутри в ${num(r.e, 3)} раза меньше` : `E₀ = ${kV(r.E0)} кВ/м`;
+
+  let msg = '', warn = false;
+  if (ds.U0 === 0) msg = 'Напряжения нет: поля нет, молекулы ориентированы хаотично.';
+  else if (ds.fill < 1 && r.Ea > 3e6){ msg = `Поле в воздушных зазорах ${kV(r.Ea)} кВ/м, это больше 3000 кВ/м: воздух пробьётся искрой.`; warn = true; }
+  else if (!has) msg = 'Пластина вынута: поле между пластинами однородное, E = E₀ = U/d.';
+  else if (m.e >= 20) msg = `У ${m.id === 'water' ? 'воды' : m.id === 'alcohol' ? 'спирта' : 'этого вещества'} ε = ${num(m.e, 3)} из-за полярных молекул. Поле внутри так ослаблено, что линий почти не осталось.`;
+  else if (ds.mode === 'off') msg = `Без пластины напряжение было ${num(ds.U0, 4)} В, с пластиной ${num(r.U, 4)} В.`;
+  else msg = `Без пластины заряд был ${nC(r.C0*ds.U0)} нКл, с пластиной ${nC(r.q)} нКл: ёмкость выросла в ${num(r.C/r.C0, 3)} раза.`;
+  const nt = $('dNote'); nt.hidden = !msg; nt.textContent = msg; nt.className = 'note' + (warn ? ' warn' : '');
+
+  dRenderCalc(m, r); dRenderCharts(m, r); dRenderTable();
+  if (reduced) dDraw(0, 0);
+}
+
+function dRenderCalc(m, r){
+  const L = [];
+  const dd = mmS(r.d), hh = mmS(r.h);
+  if (ds.fill <= 0){
+    L.push(`<div class="dim">Без диэлектрика: C₀ = ε₀S / d,  E₀ = U / d</div>`);
+    L.push(`<div>C₀ = 8,85·10⁻¹² Ф/м · 0,01 м² / ${dd} = ${pF(r.C)} пФ</div>`);
+    L.push(`<div>E₀ = ${num(r.U, 4)} В / ${dd} = ${kV(r.Ea)} кВ/м</div>`);
+    L.push(`<div class="res">q = C₀U = ${nC(r.q)} нКл</div>`);
+  } else {
+    L.push(`<div class="dim">Пластина толщиной h внутри зазора d. Эквивалентный зазор: d′ = d − h + h/ε</div>`);
+    L.push(`<div>d′ = ${dd} − ${hh} + ${hh} / ${num(r.e, 4)} = ${mmS(r.deff)}</div>`);
+    if (ds.mode === 'on'){
+      L.push(`<div>C = ε₀S / d′ = 8,85·10⁻¹² · 0,01 / ${mmS(r.deff)} = ${pF(r.C)} пФ</div>`);
+      L.push(`<div>q = C·U = ${pF(r.C)} пФ · ${num(r.U, 4)} В = ${nC(r.q)} нКл</div>`);
+      L.push(`<div>E (воздух) = U / d′ = ${kV(r.Ea)} кВ/м</div>`);
+    } else {
+      L.push(`<div>q = ε₀S·U₀ / d = ${nC(r.q)} нКл  <span class="dim">(после отключения не меняется)</span></div>`);
+      L.push(`<div>E₀ = U₀ / d = ${kV(r.Ea)} кВ/м  <span class="dim">(в воздухе поле прежнее)</span></div>`);
+      L.push(`<div>U = E₀·d′ = ${kV(r.Ea)} кВ/м · ${mmS(r.deff)} = ${num(r.U, 4)} В</div>`);
+      L.push(`<div>C = q / U = ${pF(r.C)} пФ</div>`);
+    }
+    L.push(`<div class="res">E (диэлектрик) = E / ε = ${kV(r.Ea)} / ${num(r.e, 4)} = ${kV(r.Ed)} кВ/м</div>`);
+    if (ds.fill >= 1) L.push(`<div class="dim">При h = d: C = εε₀S/d = ${pF(r.C)} пФ, это в ε раз больше, чем без диэлектрика</div>`);
+  }
+  $('dCalc').innerHTML = L.join('');
+}
+
+function dRenderCharts(m, r){
+  const dmm = ds.dmm, hmm = ds.fill*dmm, a1 = (dmm - hmm)/2, a2 = a1 + hmm, has = ds.fill > 0;
+  const Ein = x => (has && x > a1 && x < a2) ? r.Ed : r.Ea;
+  const phi = x => {
+    if (x <= a1 || !has) return r.U - r.Ea*x/1000;
+    if (x <= a2) return r.U - r.Ea*a1/1000 - r.Ed*(x - a1)/1000;
+    return r.U - r.Ea*a1/1000 - r.Ed*hmm/1000 - r.Ea*(x - a2)/1000;
+  };
+  const eps = 1e-6;
+  const xsE = has ? [0, a1, a1 + eps, a2 - eps, a2, dmm] : [0, dmm];
+  const xsP = has ? [0, a1, a2, dmm] : [0, dmm];
+  plot($('dChartE'), xsE.map(x => [x, Ein(x)/1000]), [[0, r.E0/1000], [dmm, r.E0/1000]], has ? [a1, a2] : null, m.col);
+  plot($('dChartP'), xsP.map(x => [x, phi(x)]), [[0, ds.U0], [dmm, 0]], has ? [a1, a2] : null, m.col);
+}
+function plot(svg, pts, ref, band, col){
+  const W = Math.max(260, svg.parentNode.clientWidth), H = 200, pad = {l:52, r:12, t:12, b:30};
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`); svg.setAttribute('height', H);
+  const xmax = pts[pts.length-1][0];
+  let ymax = Math.max(...pts.map(p => p[1]), ...ref.map(p => p[1]), 1e-9)*1.12;
+  const ys = niceStep(ymax, 4); ymax = Math.ceil(ymax/ys)*ys;
+  const X = x => pad.l + x/xmax*(W - pad.l - pad.r), Y = y => H - pad.b - y/ymax*(H - pad.t - pad.b);
+  let s = '';
+  if (band) s += `<rect x="${X(band[0])}" y="${pad.t}" width="${X(band[1]) - X(band[0])}" height="${H - pad.t - pad.b}" style="fill:${col}" opacity=".3"/>`;
+  for (let v = 0; v <= ymax + 1e-9; v += ys){
+    s += `<line x1="${pad.l}" x2="${W - pad.r}" y1="${Y(v)}" y2="${Y(v)}" style="stroke:var(--grid)"/>`;
+    s += `<text x="${pad.l - 6}" y="${Y(v) + 4}" text-anchor="end">${num(v, 4)}</text>`;
+  }
+  const xs = niceStep(xmax, 5);
+  for (let v = 0; v <= xmax + 1e-9; v += xs) s += `<text x="${X(v)}" y="${H - 10}" text-anchor="middle">${num(v, 3)}</text>`;
+  s += `<line x1="${pad.l}" x2="${W - pad.r}" y1="${H - pad.b}" y2="${H - pad.b}" style="stroke:var(--muted)"/>`;
+  s += `<polyline points="${ref.map(p => X(p[0]) + ',' + Y(p[1])).join(' ')}" fill="none" style="stroke:var(--muted)" stroke-dasharray="4 4"/>`;
+  s += `<polyline points="${pts.map(p => X(p[0]) + ',' + Y(p[1])).join(' ')}" fill="none" style="stroke:var(--accent)" stroke-width="2.5" stroke-linejoin="round"/>`;
+  s += `<text x="${pad.l + 4}" y="${H - pad.b + 14}" style="fill:var(--plus);font-weight:600" text-anchor="start">+</text><text x="${W - pad.r - 2}" y="${H - pad.b + 14}" style="fill:var(--minus);font-weight:600" text-anchor="end">−</text>`;
+  svg.innerHTML = s;
+}
+
+function dRenderTable(){
+  const rows = DIEL.slice(); if (ds.id === 'custom') rows.push(DCUSTOM);
+  const fillTxt = ds.fill > 0 ? `пластина ${Math.round(ds.fill*100)} % зазора` : 'пластина вынута';
+  $('dCmpTitle').textContent = `Все диэлектрики: ${ds.mode === 'on' ? 'U' : 'U₀'} = ${num(ds.U0, 4)} В, d = ${num(ds.dmm, 3)} мм, ${fillTxt}`;
+  $('dTbody').innerHTML = rows.map(m => {
+    const r = dcalc(m);
+    return `<tr data-id="${m.id}" class="${m.id === ds.id ? 'sel' : ''}"><td><button type="button">${m.id === 'custom' ? '' : `<i style="--sw:${m.col}"></i>`}${m.name}</button></td><td>${num(m.e, 4)}</td><td style="font-family:var(--f-body)">${m.polar ? 'полярные' : 'неполярные'}</td><td>${ds.fill > 0 ? kV(r.Ed) : '—'}</td><td>${num(r.U, 4)}</td><td>${pF(r.C)}</td><td>${nC(r.q)}</td></tr>`;
+  }).join('');
+}
+$('dTbody').addEventListener('click', e => {
+  const tr = e.target.closest('tr'); if (!tr) return;
+  ds.id = tr.dataset.id; document.querySelector(`#dChips input[value="${ds.id}"]`).checked = true; dUpdate();
+});
+
+/* ---------- сцена: конденсатор ---------- */
+const dsc = $('dScene'), dx = dsc.getContext('2d');
+let DW = 0, DH = 0, mols = [], dSp = 24;
+function dSize(){
+  const r = dsc.getBoundingClientRect(), d = dpr();
+  DW = r.width; DH = r.height;
+  dsc.width = Math.round(DW*d); dsc.height = Math.round(DH*d); dx.setTransform(d, 0, 0, d, 0, 0);
+  const G = dGeom(); dSp = Math.max(18, Math.min(30, DW/22));
+  mols = [];
+  for (let y = G.top + dSp*.7; y < G.bot - dSp*.4; y += dSp)
+    for (let x = G.g0 + dSp/2; x < G.g1; x += dSp)
+      mols.push({x, y, base:(Math.random()*2 - 1)*Math.PI, ph:Math.random()*6.28, f:1.5 + Math.random()*2, ang:(Math.random()*2 - 1)*Math.PI});
+  if (reduced) dDraw(0, 0);
+}
+new ResizeObserver(dSize).observe(dsc);
+function dGeom(){
+  const pw = Math.max(8, DW*.018), xP = DW*.12, xN = DW*.88, top = DH*.14, bot = DH*.86;
+  const g0 = xP + pw/2, g1 = xN - pw/2, gap = g1 - g0, cx = (g0 + g1)/2, sw = gap*ds.fill;
+  return {pw, xP, xN, top, bot, g0, g1, gap, cx, s0: cx - sw/2, s1: cx + sw/2};
+}
+function chevrons(x0, x1, y, time){
+  const step = 46, off = reduced ? step/2 : (time*28) % step;
+  for (let x = x0 + off; x < x1 - 6; x += step){
+    dx.beginPath(); dx.moveTo(x - 4, y - 4); dx.lineTo(x + 1, y); dx.lineTo(x - 4, y + 4); dx.stroke();
+  }
+}
+function dDraw(time, dt){
+  if (!DW) return;
+  const m = dm(), r = dcalc(m), G = dGeom(), has = ds.fill > 0.001;
+  dx.fillStyle = C.surface; dx.fillRect(0, 0, DW, DH);
+
+  // источник или обрыв
+  const wy = DH*.06;
+  dx.strokeStyle = C.post; dx.lineWidth = 2;
+  dx.beginPath(); dx.moveTo(G.xP, G.top); dx.lineTo(G.xP, wy); dx.lineTo(DW/2 - 14, wy);
+  dx.moveTo(G.xN, G.top); dx.lineTo(G.xN, wy); dx.lineTo(DW/2 + 14, wy); dx.stroke();
+  dx.font = '600 11px Manrope, system-ui, sans-serif'; dx.textAlign = 'center';
+  if (ds.mode === 'on'){
+    dx.lineWidth = 3; dx.beginPath(); dx.moveTo(DW/2 - 4, wy - 11); dx.lineTo(DW/2 - 4, wy + 11); dx.stroke();
+    dx.lineWidth = 6; dx.beginPath(); dx.moveTo(DW/2 + 5, wy - 6); dx.lineTo(DW/2 + 5, wy + 6); dx.stroke();
+    dx.fillStyle = C.muted; dx.fillText(`источник ${num(ds.U0, 4)} В`, DW/2, wy + 26);
+  } else {
+    dx.fillStyle = C.muted; dx.fillText('отключён', DW/2, wy + 4);
+  }
+
+  // пластина диэлектрика
+  const col = hex(m.col);
+  if (has){
+    dx.fillStyle = rgba(col, .32); dx.fillRect(G.s0, G.top + 4, G.s1 - G.s0, G.bot - G.top - 8);
+    dx.strokeStyle = rgba(col, .95); dx.lineWidth = 1.5; dx.strokeRect(G.s0, G.top + 4, G.s1 - G.s0, G.bot - G.top - 8);
+  }
+
+  // молекулы
+  const a = ds.U0 > 0 ? 1 - Math.exp(-r.Ea/8e4) : 0;
+  const L = dSp*.36;
+  dx.save();
+  if (has){ dx.beginPath(); dx.rect(G.s0, G.top + 4, G.s1 - G.s0, G.bot - G.top - 8); dx.clip(); }
+  mols.forEach(o => {
+    if (!has || o.x < G.s0 - 2 || o.x > G.s1 + 2) return;
+    const wob = Math.sin(time*o.f + o.ph);
+    const x = o.x + (m.liquid ? Math.sin(time*1.3 + o.ph)*dSp*.1 : 0), y = o.y + (m.liquid ? Math.cos(time*1.1 + o.ph)*dSp*.1 : 0);
+    if (m.polar){
+      const tgt = o.base*(1 - a) + wob*(m.liquid ? .45 : .2)*(1 - a*.6);
+      o.ang = reduced || !dt ? tgt : o.ang + (tgt - o.ang)*Math.min(1, dt*3);
+      const c = Math.cos(o.ang), s = Math.sin(o.ang);
+      dx.strokeStyle = C.muted; dx.lineWidth = 2;
+      dx.beginPath(); dx.moveTo(x - c*L/2, y - s*L/2); dx.lineTo(x + c*L/2, y + s*L/2); dx.stroke();
+      dx.fillStyle = C.plus; dx.beginPath(); dx.arc(x + c*L/2, y + s*L/2, L*.3, 0, 6.283); dx.fill();
+      dx.fillStyle = C.minus; dx.beginPath(); dx.arc(x - c*L/2, y - s*L/2, L*.3, 0, 6.283); dx.fill();
+    } else {
+      const sh = L*.45*a + (reduced ? 0 : wob*L*.04);
+      dx.fillStyle = C.minus; dx.globalAlpha = .35;
+      dx.beginPath(); dx.ellipse(x - sh, y, L*.55 + sh*.3, L*.5, 0, 0, 6.283); dx.fill();
+      dx.globalAlpha = 1; dx.fillStyle = C.plus;
+      dx.beginPath(); dx.arc(x, y, L*.17, 0, 6.283); dx.fill();
+    }
+  });
+  dx.restore();
+
+  // линии поля
+  const cap = Math.floor((G.bot - G.top)/8);
+  const nA = Math.min(cap, Math.round(r.Ea/1.2e4));
+  const ndF = nA/r.e;
+  let cont = new Set(), faint = 1;
+  if (!has) for (let i = 0; i < nA; i++) cont.add(i);
+  else {
+    let nd = Math.round(ndF);
+    if (nd === 0 && ndF > .04 && nA > 0){ nd = 1; faint = Math.max(.25, Math.min(1, ndF)); }
+    for (let j = 0; j < nd; j++) cont.add(Math.floor((j + .5)*nA/nd));
+  }
+  const yAt = i => G.top + (i + .5)*(G.bot - G.top)/nA;
+  dx.strokeStyle = C.ink; dx.lineWidth = 1.3;
+  const fs = Math.max(9, Math.min(13, (G.bot - G.top)/Math.max(nA, 1)*.9));
+  for (let i = 0; i < nA; i++){
+    const y = yAt(i);
+    if (cont.has(i)){
+      dx.globalAlpha = .6*(has ? faint : 1);
+      dx.beginPath(); dx.moveTo(G.g0 + 10, y); dx.lineTo(G.g1 - 10, y); dx.stroke();
+      chevrons(G.g0 + 10, G.g1 - 10, y, time);
+    } else {
+      dx.globalAlpha = .6;
+      dx.beginPath(); dx.moveTo(G.g0 + 10, y); dx.lineTo(G.s0 - 2, y); dx.moveTo(G.s1 + 2, y); dx.lineTo(G.g1 - 10, y); dx.stroke();
+      chevrons(G.g0 + 10, G.s0, y, time); chevrons(G.s1, G.g1 - 10, y, time);
+      dx.globalAlpha = 1; dx.font = `700 ${fs}px "JetBrains Mono", monospace`; dx.textAlign = 'center';
+      dx.fillStyle = C.minus; dx.fillText('−', G.s0 + 6, y + fs*.35);
+      dx.fillStyle = C.plus; dx.fillText('+', G.s1 - 6, y + fs*.35);
+    }
+  }
+  dx.globalAlpha = 1;
+
+  // обкладки и свободные заряды
+  dx.fillStyle = C.plus; dx.fillRect(G.xP - G.pw/2, G.top - 6, G.pw, G.bot - G.top + 12);
+  dx.fillStyle = C.minus; dx.fillRect(G.xN - G.pw/2, G.top - 6, G.pw, G.bot - G.top + 12);
+  dx.font = `700 ${fs}px "JetBrains Mono", monospace`; dx.textAlign = 'center';
+  for (let i = 0; i < nA; i++){
+    const y = yAt(i);
+    dx.fillStyle = C.plus; dx.fillText('+', G.xP - G.pw/2 - 8, y + fs*.35);
+    dx.fillStyle = C.minus; dx.fillText('−', G.xN + G.pw/2 + 8, y + fs*.35);
+  }
+
+  // подписи полей снизу
+  dx.font = '600 11px "JetBrains Mono", monospace'; dx.fillStyle = C.muted; dx.textAlign = 'center';
+  const ly = G.bot + (DH - G.bot)*.62;
+  if (!has) dx.fillText(`E₀ = ${kV(r.Ea)} кВ/м`, G.cx, ly);
+  else {
+    const left = (G.g0 + G.s0)/2, right = (G.s1 + G.g1)/2;
+    if (G.s0 - G.g0 > 70){ dx.fillText(`${kV(r.Ea)}`, left, ly); dx.fillText(`${kV(r.Ea)}`, right, ly); }
+    dx.fillStyle = C.accent; dx.fillText(`E/ε = ${kV(r.Ed)} кВ/м`, G.cx, ly);
+  }
+}
+if (!reduced){
+  let dLast = performance.now();
+  const dLoop = now => {
+    const dt = Math.min(.05, (now - dLast)/1000); dLast = now;
+    dDraw(now/1000, dt);
+    requestAnimationFrame(dLoop);
+  };
+  requestAnimationFrame(dLoop);
+}
+let dDrag = false;
+function fillFromEvent(e){
+  const rc = dsc.getBoundingClientRect(), G = dGeom();
+  const x = (e.clientX - rc.left)/rc.width*DW;
+  setFill(Math.round(Math.min(1, Math.abs(x - G.cx)*2/G.gap)*100));
+}
+dsc.addEventListener('pointerdown', e => { dDrag = true; dsc.setPointerCapture(e.pointerId); fillFromEvent(e); });
+dsc.addEventListener('pointermove', e => { if (dDrag) fillFromEvent(e); });
+dsc.addEventListener('pointerup', () => dDrag = false);
+dsc.addEventListener('pointercancel', () => dDrag = false);
+new ResizeObserver(() => { const m = dm(); dRenderCharts(m, dcalc(m)); }).observe($('dChartE').parentNode);
+mq.addEventListener?.('change', () => dUpdate());
+new MutationObserver(() => dUpdate()).observe(document.documentElement, {attributes:true, attributeFilter:['data-theme']});
+
+/* ---------- переключение тем ---------- */
+const TOPICS = {soprotivlenie:'t-rt', dielektrik:'t-diel'};
+function showTopic(name){
+  if (!TOPICS[name]) name = 'soprotivlenie';
+  for (const [k, id] of Object.entries(TOPICS)) $(id).hidden = k !== name;
+  document.querySelectorAll('.topics button').forEach(b => b.setAttribute('aria-selected', String(b.dataset.topic === name)));
+  if (name === 'soprotivlenie') update(); else dUpdate();
+}
+document.querySelector('.topics').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  showTopic(b.dataset.topic);
+  try { if (location.hash.slice(1) !== b.dataset.topic) location.hash = b.dataset.topic; } catch (_) {}
+});
+addEventListener('hashchange', () => { if (TOPICS[location.hash.slice(1)]) showTopic(location.hash.slice(1)); });
+dUpdate();
+showTopic(location.hash.slice(1));
+</script>
+</body>
+</html>
